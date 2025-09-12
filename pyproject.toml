@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "killmailbot"
+version = "0.1.0"
+description = "Discord bot for EVE killmails"
+requires-python = ">=3.11"
+dependencies = [
+  "discord.py==2.6.3",
+  "httpx[http2]==0.28.1",
+  "tenacity==9.1.2",
+  "pydantic==2.11.1",
+  "python-dotenv>=1.0",
+  "orjson>=3.9",
+  "uvloop>=0.19; platform_system == 'Linux'",
+]
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+lint.select = ["E","F","I","UP"]
+lint.ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+asyncio_mode = "auto"
+

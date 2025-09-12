@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project + dev deps
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+          pip install -r requirements-dev.txt || true
+          pip install pytest ruff black mypy
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Format (black --check)
+        run: black --check .
+
+      - name: Typecheck (mypy, non-blocking)
+        run: mypy src || true
+
+      - name: Run tests
+        run: pytest -q

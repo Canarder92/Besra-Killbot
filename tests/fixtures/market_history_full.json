@@ -1,0 +1,9 @@
+[
+  { "average": 46000, "date": "2025-09-04", "highest": 46000, "lowest": 46000, "order_count": 87, "volume": 1064 },
+  { "average": 44000, "date": "2025-09-05", "highest": 44000, "lowest": 44000, "order_count": 95, "volume": 707 },
+  { "average": 44000, "date": "2025-09-06", "highest": 44000, "lowest": 44000, "order_count": 114, "volume": 1018 },
+  { "average": 43000, "date": "2025-09-07", "highest": 43000, "lowest": 43000, "order_count": 122, "volume": 1687 },
+  { "average": 43000, "date": "2025-09-08", "highest": 43990, "lowest": 43000, "order_count": 83, "volume": 756 },
+  { "average": 40000, "date": "2025-09-09", "highest": 40990, "lowest": 40000, "order_count": 107, "volume": 1216 },
+  { "average": 42000, "date": "2025-09-10", "highest": 43000, "lowest": 41000, "order_count": 110, "volume": 900 }
+]

@@ -1,0 +1,6 @@
+# requirements-dev.txt
+pytest>=8.4
+pytest-asyncio==0.23.8
+ruff
+black
+mypy

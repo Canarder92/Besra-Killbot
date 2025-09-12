@@ -1,0 +1,16 @@
+services:
+  killmailbot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    volumes:
+      - killmailbot_data:/app/data
+    restart: unless-stopped
+    ports:
+      - "${CALLBACK_PORT:-53682}:${CALLBACK_PORT:-53682}"
+
+
+volumes:
+  killmailbot_data:

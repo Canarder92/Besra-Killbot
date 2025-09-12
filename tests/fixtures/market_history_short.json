@@ -1,0 +1,4 @@
+[
+  { "average": 42000, "date": "2025-09-08", "highest": 43000, "lowest": 41000, "order_count": 60, "volume": 500 },
+  { "average": 44000, "date": "2025-09-09", "highest": 45000, "lowest": 43000, "order_count": 70, "volume": 600 }
+]
