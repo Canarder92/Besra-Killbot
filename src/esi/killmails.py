@@ -18,7 +18,7 @@ async def fetch_recent_killmails(
     if etag and not force_body:
         # renvoyer l'ETag tel quel (guillemets/W/ inclus) pour une revalidation correcte
         headers["If-None-Match"] = etag
-    print("get data")
+
     # on passe par _request pour récupérer les headers même si la payload est une LISTE
     resp = await client._request(
         "GET", f"/v1/corporations/{corporation_id}/killmails/recent/?page=1", headers=headers
