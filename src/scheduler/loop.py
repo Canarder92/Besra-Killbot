@@ -14,6 +14,7 @@ from src.core.store import JSONStore
 from src.esi.client import AsyncESIClient
 from src.esi.killmails import fetch_recent_killmails
 from src.esi.universe import get_region_id_for_system, resolve_names
+from src.zkb.poster import post_main
 from src.zkb.runner import maybe_run_zkb_after_esi
 from src.zkb.zkill import fetch_corporation_killrefs
 
@@ -90,6 +91,7 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                     for ref in refs:
                         if await idx.add_if_absent(ref.killmail_id, ref.killmail_hash):
                             await process_ref(ctx, ref.killmail_id, ref.killmail_hash)
+                            post_main(ref.killmail_id, ref.killmail_hash)
 
                     # Après ESI: zKill 1 fois sur N, via le même pipeline
                     await maybe_run_zkb_after_esi(

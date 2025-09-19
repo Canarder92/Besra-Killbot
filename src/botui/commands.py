@@ -77,3 +77,29 @@ async def install_commands(client: discord.Client) -> None:
 
     await tree.sync()
     _commands_installed = True
+
+    @tree.command(
+        name="zkill_post",
+        description="Active/Désactive la soumission automatique à zKillboard (volatile)",
+    )
+    @app_commands.describe(action="enable | disable | status")
+    async def zkill_post(interaction: discord.Interaction, action: str):
+        from src.config import settings
+
+        a = (action or "status").lower().strip()
+        if a in ("enable", "on", "true", "1"):
+            settings.ZKB_POST_ENABLE = True
+            await interaction.response.send_message(
+                "✅ zKill POST activé (non persistant).", ephemeral=True
+            )
+        elif a in ("disable", "off", "false", "0"):
+            settings.ZKB_POST_ENABLE = False
+            await interaction.response.send_message(
+                "⛔ zKill POST désactivé (non persistant).", ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                f"État actuel : {'activé ✅' if settings.ZKB_POST_ENABLE else 'désactivé ⛔'}.\n"
+                "Utilisation : /zkill_post action:<enable|disable|status>",
+                ephemeral=True,
+            )

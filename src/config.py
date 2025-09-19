@@ -27,6 +27,8 @@ class Settings(BaseModel):
     ZKB_ENABLE: bool = os.getenv("ZKB_ENABLE", "false").lower() in ("1", "true", "yes")
     ZKB_PAGES: int = int(os.getenv("ZKB_PAGES", "1"))
     ZKB_EVERY_N: int = int(os.getenv("ZKB_EVERY_N", "3"))  # => 1 fois sur 3 cycles ESI
+    ZKB_POST_ENABLE: bool = os.getenv("ZKB_POST_ENABLE", "false").lower() in ("1", "true", "yes")
+    ZKB_POST_USER_AGENT: str = os.getenv("ZKB_POST_USER_AGENT", "")
 
 
 settings = Settings()

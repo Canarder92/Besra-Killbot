@@ -131,7 +131,7 @@ def build_embed_insight5(
     if fb and fb.ship_type_id and final_ship_name:
         if involved == 1:
             f_lines.append(
-                row_link("Ship", final_ship_name, zkill_ship(fb.ship_type_id)) + " Solo !"
+                row_link("Ship", final_ship_name, zkill_ship(fb.ship_type_id)) + " (solo)"
             )
         else:
             f_lines.append(
