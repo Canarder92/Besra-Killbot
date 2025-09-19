@@ -163,20 +163,95 @@ In your Discord server:
 
 ## 7) `.env` knobs (quick reference)
 
-- `LOG_LEVEL` — bot log verbosity (e.g. `INFO`, `DEBUG`).  
-- `POLL_INTERVAL_SECONDS` — how often the scheduler polls ESI for new corp killmails (default `120`).  
-- `CLEANUP_INTERVAL_MINUTES` — periodically refresh the local index to match ESI’s “recent” page (default `60`).  
-- `MARKET_REGION_ID` — EVE region used to price items (default `10000002` “The Forge”).  
-- `PRICE_TTL_DAYS` — cache time for computed average prices (default `7`).  
-- `CALLBACK_PORT` — local HTTP port used by the one-shot PKCE flow (default `53682`). Must match the SSO app callback and be reachable from your browser (use port-forwarding if needed).  
-- `COMPAT_DATE` — sent as `X-Compatibility-Date` to ESI (default `2025-08-26`).  
-- `TIMEZONE` — is used to convert the date and hour to your timezone.  
+### Discord
+- `DISCORD_TOKEN` — your Discord bot token (required).  
+- `DISCORD_CHANNEL_ID` — ID of the text channel where the bot will post killmails.  
+
+### EVE ESI / SSO
+- `EVE_CLIENT_ID` — client ID of your EVE SSO application.  
+- `EVE_CLIENT_SECRET` — client secret of your EVE SSO application.  
+- `EVE_REFRESH_TOKEN` — refresh token generated after local auth (filled automatically after first login).  
+- `CORPORATION_ID` — numeric ID of the corporation being tracked.  
+- `COMPAT_DATE` — ESI compatibility date (`X-Compatibility-Date`). ⚠️ Do not change unless you know what you’re doing.  
+- `ESI_USER_AGENT` — User-Agent sent to ESI. Must identify your bot and include a contact (e.g. `KillMailBot/1.1 (contact: mail@example.com)`).  
+
+### zKillboard
+- `ZKB_ENABLE` — enable zKillboard integration (`true`/`false`).  
+- `ZKB_PAGES` — number of zKill pages to fetch per cycle.  
+- `ZKB_EVERY_N` — run a zKill fetch every *N* ESI poll iterations.  
+- `ZKB_POST_ENABLE` — if enabled, the bot automatically posts killmails retrieved from ESI to zKill (useful to avoid 404 errors).  
+- `ZKB_POST_USER_AGENT` — custom User-Agent for POST requests to zKill (e.g. URL + maintainer + contact).  
+
+### Timezone
+- `TIMEZONE` — timezone used to display times in Discord.  
+  - Examples: `Europe/Paris`, `America/New_York`, `Asia/Tokyo`.  
+
+### Local auth callback
+- `CALLBACK_PORT` — local HTTP port used by the PKCE authentication flow (default `53682`).  
+  Must match the callback configured in your EVE SSO application and be reachable from your browser (port-forwarding may be required).  
+
+### Application
+- `LOG_LEVEL` — logging verbosity (`DEBUG`, `INFO`, `WARNING`, etc.).  
+- `POLL_INTERVAL_SECONDS` — how often ESI is polled for new corp killmails (seconds). Default: `120`.  
+- `CLEANUP_INTERVAL_MINUTES` — how often the local index is cleaned up to match ESI’s “recent” page (minutes). Default: `60`.  
+
+### Pricing
+- `MARKET_REGION_ID` — market region ID used for item pricing. Default: `10000002` (The Forge / Jita).  
+- `PRICE_TTL_DAYS` — cache duration for computed average prices (days). Default: `7`.  
 
 ---
 
-## 8) Commands (quick facts)
+## 8) Slash commands
 
-- `/status` — checks ESI status and replies with a simple “Bot: Ok / ESI: Ok” when healthy.  
-- `/test_post` — fetches the first killmail from ESI “recent” and posts the full embed; also sends a private step-by-step report.  
-- `/ping` — “Pong!” sanity check.  
-- `/force_refresh_prices` — disabled for now.
+> All commands are registered via Discord’s Application Commands (slash commands).  
+> Responses marked **[ephemeral]** are only visible to the user who invoked the command.
+
+### `/ping`
+- **Description:** Quick bot liveness check.  
+- **Response:** `Pong!` **[ephemeral]**
+
+---
+
+### `/status`
+- **Description:** Fast health check (bot + ESI connectivity).  
+- **What it does:**
+  - Calls `GET /status` on ESI with your current credentials and headers.
+  - Reports success or a readable error (network timeout, HTTP code, etc.).
+- **Response:** Summary of bot + ESI status **[ephemeral]**
+
+---
+
+### `/test_post_esi`
+- **Description:** Diagnostic: fetches the most recent killmail via **ESI** and posts it.  
+- **What it does:**
+  1. Reads recent corp killmail refs from ESI.
+  2. Fetches full killmail details from ESI.
+  3. Resolves names/regions.
+  4. Computes value/prices.
+  5. Builds and posts the Insight v5 embed in the channel (public).
+  6. Returns a step-by-step diagnostic report **[ephemeral]**.
+
+---
+
+### `/test_post_zkill`
+- **Description:** Diagnostic: fetches the most recent killmail via **zKill** (using ESI for details) and posts it.  
+- **Requirements:** `ZKB_ENABLE=true` in `.env`.  
+- **What it does:**
+  1. Reads recent corp killmail refs from zKill (using `ZKB_PAGES`).
+  2. Fetches full killmail details from ESI.
+  3. Resolves names/regions, prices, and posts the embed (public).
+  4. Returns a step-by-step diagnostic report **[ephemeral]**.
+
+---
+
+### `/zkill_post`
+- **Description:** Toggle zKill **auto-submission** (non-persistent switch).  
+- **Why:** Prevents zKill 404s by posting kills you retrieved via ESI.  
+- **Options:**
+  - `action: enable | disable | status`
+- **Behavior:**
+  - `enable/on/true/1` → enables auto POST to zKill (runtime-only).
+  - `disable/off/false/0` → disables auto POST to zKill (runtime-only).
+  - `status` → shows current state.
+- **Response:** Confirmation/status **[ephemeral]**
+- **Notes:** Uses `ZKB_POST_USER_AGENT` for POSTs; respects `ZKB_POST_ENABLE` as runtime flag (not written back to `.env`).
