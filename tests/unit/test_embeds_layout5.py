@@ -98,7 +98,7 @@ def test_embed_contains_expected_links():
     assert "https://zkillboard.com/character/2117825129/" in ff.value
 
     # Comme involved == 1, on doit voir "Solo !" au lieu de (+N)
-    assert "Solo !" in ff.value
+    assert "(solo)" in ff.value
 
     # La Value ET le Drop sont maintenant dans la colonne Final Blow
     assert f"Value: {format_isk(total_value)}" in ff.value
