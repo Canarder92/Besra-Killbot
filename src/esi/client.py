@@ -11,7 +11,20 @@ from src.config import settings
 
 ESI_BASE = "https://esi.evetech.net"
 LOGIN_BASE = "https://login.eveonline.com"
-USER_AGENT = "KillMailBot/0.1 (+https://example.invalid)"  # à personnaliser si besoin
+
+
+def _build_esi_headers(user_agent: str | None = None) -> dict[str, str]:
+    ua = user_agent or settings.ESI_USER_AGENT
+    if not ua:
+        print("[ESI] Aucun User-Agent défini (ESI_USER_AGENT manquant dans .env)")
+    return {
+        "Accept": "application/json",
+        "Accept-Language": "en",
+        "X-Compatibility-Date": settings.COMPAT_DATE,
+        "User-Agent": ua or "Unset-UA",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
 
 
 class TokenBucket:
@@ -39,12 +52,7 @@ class AsyncESIClient:
         self._client = httpx.AsyncClient(
             http2=True,
             timeout=httpx.Timeout(10.0, connect=10.0),
-            headers={
-                "Accept": "application/json",
-                "Accept-Language": "en",
-                "X-Compatibility-Date": settings.COMPAT_DATE,
-                "User-Agent": USER_AGENT,
-            },
+            headers=_build_esi_headers(),
             base_url=ESI_BASE,
         )
 

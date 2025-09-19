@@ -69,6 +69,9 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
     prices = PricesCache(PRICES_PATH)
     esi = AsyncESIClient()
 
+    # 👉 ETag gardé seulement en mémoire (aucun fichier sur disque)
+    last_etag: str | None = None
+
     # Contexte pipeline partagé (ESI + zKill)
     ctx = PipelineContext(
         esi=esi,
@@ -83,17 +86,34 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
     )
 
     async def poll_task():
+        nonlocal last_etag
         while True:
             try:
-                status, etag, refs = await fetch_recent_killmails(esi, int(settings.CORPORATION_ID))
-                if status == "ok":
-                    # ESI: claim -> pipeline partagé
+                # ETag en mémoire envoyé via If-None-Match par fetch_recent_killmails
+                status, new_etag, refs = await fetch_recent_killmails(
+                    esi, int(settings.CORPORATION_ID), etag=last_etag
+                )
+
+                if status == "not_modified":
+                    # Rien de neuf côté ESI — on peut déclencher zKill selon la cadence
+                    await maybe_run_zkb_after_esi(
+                        settings=settings,
+                        corporation_id=int(settings.CORPORATION_ID),
+                        idx=idx,
+                        process_ref=lambda km_id, km_hash: process_ref(ctx, km_id, km_hash),
+                    )
+
+                elif status == "ok":
+                    # Mettre à jour l'ETag uniquement en mémoire
+                    last_etag = new_etag
+
+                    # Traiter les nouveaux refs
                     for ref in refs:
                         if await idx.add_if_absent(ref.killmail_id, ref.killmail_hash):
                             await process_ref(ctx, ref.killmail_id, ref.killmail_hash)
                             post_main(ref.killmail_id, ref.killmail_hash)
 
-                    # Après ESI: zKill 1 fois sur N, via le même pipeline
+                    # Puis zKill selon la cadence
                     await maybe_run_zkb_after_esi(
                         settings=settings,
                         corporation_id=int(settings.CORPORATION_ID),
@@ -107,7 +127,7 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
     async def cleanup_task():
         while True:
             try:
-                # ESI: snapshot
+                # ESI: snapshot (force_body=True pour bypass 304 et resynchroniser l'index)
                 status, _etag, refs = await fetch_recent_killmails(
                     esi, int(settings.CORPORATION_ID), etag=None, force_body=True
                 )

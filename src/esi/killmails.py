@@ -14,26 +14,34 @@ async def fetch_recent_killmails(
     *,
     force_body: bool = False,
 ) -> tuple[str, str | None, list[KillmailRef]]:
-    headers = {}
+    headers: dict[str, str] = {}
     if etag and not force_body:
+        # renvoyer l'ETag tel quel (guillemets/W/ inclus) pour une revalidation correcte
         headers["If-None-Match"] = etag
-
-    data: Any = await client.get_json(
-        f"/v1/corporations/{corporation_id}/killmails/recent/?page=1", headers=headers
+    print("get data")
+    # on passe par _request pour récupérer les headers même si la payload est une LISTE
+    resp = await client._request(
+        "GET", f"/v1/corporations/{corporation_id}/killmails/recent/?page=1", headers=headers
     )
 
-    if isinstance(data, dict) and data.get("__not_modified__"):
-        return "not_modified", cast(str | None, data.get("__etag__")), []
+    if resp.status_code == 304:
+        # Rien de nouveau : on renvoie "not_modified" et on conserve l'ETag
+        return "not_modified", resp.headers.get("ETag", etag), []
+
+    resp.raise_for_status()
+    new_etag = resp.headers.get("ETag")
+    data: Any = resp.json()
 
     # Normalement: une LISTE d'objets {killmail_id, killmail_hash}
     if not isinstance(data, list):
-        return "ok", None, []
+        return "ok", new_etag, []
 
     refs = [
         KillmailRef(killmail_id=int(x["killmail_id"]), killmail_hash=str(x["killmail_hash"]))
         for x in data
+        if x and "killmail_id" in x and "killmail_hash" in x
     ]
-    return "ok", None, refs
+    return "ok", new_etag, refs
 
 
 async def fetch_killmail_details(client: AsyncESIClient, km_id: int, km_hash: str) -> Killmail:
