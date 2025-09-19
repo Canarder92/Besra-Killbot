@@ -63,13 +63,21 @@ volumes:
     EVE_REFRESH_TOKEN=
     CORPORATION_ID=
     COMPAT_DATE=2025-08-26
+    ESI_USER_AGENT=KillMailBot/1.1 (contact: mail@example.com)
+
+    # Zkill
+    ZKB_ENABLE=true
+    ZKB_PAGES=1
+    ZKB_EVERY_N=3
+    ZKB_POST_ENABLE=true
+    ZKB_POST_USER_AGENT=https://www.website.smt/ Maintainer: name <mail@domain.com>
 
     #Europe/Paris Berlin Rome Moscow Madrid ...
     #America/New_York Toronto Chicago ...
     #Asia/Dubai Tokyo Shanghai Seoul
     TIMEZONE=Europe/London
 
-    # Auth local callback (PKCE helper)
+    # Auth local callback
     CALLBACK_PORT=53682
 
     # App
