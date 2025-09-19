@@ -75,9 +75,6 @@ async def install_commands(client: discord.Client) -> None:
     async def test_post_zkill(interaction: discord.Interaction):
         await run_test_post(interaction, source="zkill")
 
-    await tree.sync()
-    _commands_installed = True
-
     @tree.command(
         name="zkill_post",
         description="Active/Désactive la soumission automatique à zKillboard (volatile)",
@@ -103,3 +100,6 @@ async def install_commands(client: discord.Client) -> None:
                 "Utilisation : /zkill_post action:<enable|disable|status>",
                 ephemeral=True,
             )
+
+    await tree.sync()
+    _commands_installed = True
