@@ -82,7 +82,7 @@ volumes:
 
     # App
     LOG_LEVEL=INFO
-    POLL_INTERVAL_SECONDS=120
+    POLL_INTERVAL_SECONDS=300    #CCP caches the data for 5 min
     CLEANUP_INTERVAL_MINUTES=60
 
     # Pricing

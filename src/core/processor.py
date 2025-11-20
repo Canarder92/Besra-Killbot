@@ -78,7 +78,10 @@ async def process_ref(ctx: PipelineContext, killmail_id: int, killmail_hash: str
         victim_all_name = _lookup(name_map, km.victim.alliance_id)
         if region_id:
             region_name = name_map.get(region_id, region_name)
-    except Exception:
+    except Exception as e:
+        import traceback
+        print(f"[processor] resolve_names error for killmail {killmail_id}: {e}")
+        print(f"[processor] traceback:\n{traceback.format_exc()}")
         system_name = f"System {km.solar_system_id}"
         ship_name = f"Type {km.victim.ship_type_id}"
         final_ship_name = None

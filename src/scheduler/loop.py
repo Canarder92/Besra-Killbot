@@ -107,11 +107,23 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                     # Mettre à jour l'ETag uniquement en mémoire
                     last_etag = new_etag
 
-                    # Traiter les nouveaux refs
-                    for ref in refs:
-                        if await idx.add_if_absent(ref.killmail_id, ref.killmail_hash):
-                            await process_ref(ctx, ref.killmail_id, ref.killmail_hash)
-                            post_main(ref.killmail_id, ref.killmail_hash)
+                    # Les killmails sont déjà triés par ID décroissant (plus récent d'abord)
+                    # Inverser pour traiter du plus ancien au plus récent
+                    known = await idx.known_set()
+                    
+                    # Traiter en flux inversé (du plus vieux au plus récent)
+                    for ref in reversed(refs):
+                        # Ne traiter que les killmails pas encore dans l'index
+                        if (ref.killmail_id, ref.killmail_hash) not in known:
+                            try:
+                                await process_ref(ctx, ref.killmail_id, ref.killmail_hash)
+                                post_main(ref.killmail_id, ref.killmail_hash)
+                                # Marquer comme traité APRÈS le post Discord
+                                await idx.add_if_absent(ref.killmail_id, ref.killmail_hash)
+                            except Exception as e:
+                                import traceback
+                                print(f"[process] error for killmail {ref.killmail_id}: {e}")
+                                print(f"[process] traceback:\n{traceback.format_exc()}")
 
                     # Puis zKill selon la cadence
                     await maybe_run_zkb_after_esi(
@@ -121,10 +133,15 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                         process_ref=lambda km_id, km_hash: process_ref(ctx, km_id, km_hash),
                     )
             except Exception as e:
+                import traceback
                 print(f"[poll] error: {e}")
+                print(f"[poll] traceback:\n{traceback.format_exc()}")
             await asyncio.sleep(settings.POLL_INTERVAL_SECONDS)
 
     async def cleanup_task():
+        # Attendre avant la première exécution pour ne pas concurrencer poll_task
+        await asyncio.sleep(settings.CLEANUP_INTERVAL_MINUTES * 60)
+        
         while True:
             try:
                 # ESI: snapshot (force_body=True pour bypass 304 et resynchroniser l'index)

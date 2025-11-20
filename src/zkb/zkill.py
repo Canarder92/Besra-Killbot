@@ -49,6 +49,14 @@ async def fetch_corporation_killrefs(
 
             if resp.status_code == 404:
                 break
+            
+            if resp.status_code != 200:
+                print(f"[zKill] HTTP {resp.status_code} for {url}")
+                print(f"[zKill]   Response headers: {dict(resp.headers)}")
+                try:
+                    print(f"[zKill]   Response body: {resp.text[:500]}")
+                except Exception:
+                    pass
 
             resp.raise_for_status()
             data = resp.json()
