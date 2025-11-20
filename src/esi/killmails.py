@@ -33,13 +33,15 @@ async def fetch_recent_killmails(
         try:
             # on passe par _request pour récupérer les headers même si la payload est une LISTE
             resp = await client._request(
-                "GET", f"/v1/corporations/{corporation_id}/killmails/recent/?page=1", headers=headers
+                "GET",
+                f"/v1/corporations/{corporation_id}/killmails/recent/?page=1",
+                headers=headers,
             )
 
             if resp.status_code == 304:
                 # Rien de nouveau : on renvoie "not_modified" et on conserve l'ETag
                 return "not_modified", resp.headers.get("ETag", etag), []
-            
+
             resp.raise_for_status()
             new_etag = resp.headers.get("ETag")
             data: Any = resp.json()
@@ -49,26 +51,37 @@ async def fetch_recent_killmails(
                 return "ok", new_etag, []
 
             refs = [
-                KillmailRef(killmail_id=int(x["killmail_id"]), killmail_hash=str(x["killmail_hash"]))
+                KillmailRef(
+                    killmail_id=int(x["killmail_id"]), killmail_hash=str(x["killmail_hash"])
+                )
                 for x in data
                 if x and "killmail_id" in x and "killmail_hash" in x
             ]
             return "ok", new_etag, refs
-        
+
         except httpx.HTTPStatusError as e:
             status = e.response.status_code
             if status == 429 and attempt < max_retries - 1:
                 retry_after = e.response.headers.get("Retry-After", "60")
                 wait_time = int(retry_after) + 1
-                print(f"ESI Error 429 for GET /v1/corporations/{corporation_id}/killmails/recent/ retrying in {wait_time} sec")
+                print(
+                    f"ESI Error 429 for GET /v1/corporations/{corporation_id}"
+                    f"/killmails/recent/ retrying in {wait_time} sec"
+                )
                 await asyncio.sleep(wait_time)
                 continue
             elif 400 <= status < 500:
-                print(f"ESI Error {status} for GET /v1/corporations/{corporation_id}/killmails/recent/")
+                print(
+                    f"ESI Error {status} for GET "
+                    f"/v1/corporations/{corporation_id}/killmails/recent/"
+                )
             elif 500 <= status < 600:
-                print(f"ESI Error {status} for GET /v1/corporations/{corporation_id}/killmails/recent/")
+                print(
+                    f"ESI Error {status} for GET "
+                    f"/v1/corporations/{corporation_id}/killmails/recent/"
+                )
             raise
-    
+
     # Si on arrive ici, toutes les tentatives ont échoué
     raise Exception(f"Failed to fetch recent killmails after {max_retries} attempts")
 
@@ -80,7 +93,7 @@ async def fetch_killmail_details(client: AsyncESIClient, km_id: int, km_hash: st
         # Garder seulement les requêtes de la dernière seconde
         while _last_detail_requests and _last_detail_requests[0] < now - 1.0:
             _last_detail_requests.pop(0)
-        
+
         # Si on a déjà 3 requêtes dans la dernière seconde, attendre
         if len(_last_detail_requests) >= 3:
             sleep_time = 1.0 - (now - _last_detail_requests[0])
@@ -90,9 +103,9 @@ async def fetch_killmail_details(client: AsyncESIClient, km_id: int, km_hash: st
             now = time.time()
             while _last_detail_requests and _last_detail_requests[0] < now - 1.0:
                 _last_detail_requests.pop(0)
-        
+
         _last_detail_requests.append(time.time())
-    
+
     # Retry avec Retry-After en cas de 429
     max_retries = 3
     for attempt in range(max_retries):
@@ -115,13 +128,16 @@ async def fetch_killmail_details(client: AsyncESIClient, km_id: int, km_hash: st
                 t = str(data.get("killmail_time", ""))
                 km.killmail_time = _dt.fromisoformat(t.replace("Z", "+00:00"))
             return km
-        
+
         except httpx.HTTPStatusError as e:
             status = e.response.status_code
             if status == 429 and attempt < max_retries - 1:
                 retry_after = e.response.headers.get("Retry-After", "60")
                 wait_time = int(retry_after) + 1
-                print(f"ESI Error 429 for GET /v1/killmails/{km_id}/{km_hash}/ retrying in {wait_time} sec")
+                print(
+                    f"ESI Error 429 for GET /v1/killmails/{km_id}/{km_hash}/ "
+                    f"retrying in {wait_time} sec"
+                )
                 await asyncio.sleep(wait_time)
                 continue
             elif 400 <= status < 500:
@@ -129,6 +145,6 @@ async def fetch_killmail_details(client: AsyncESIClient, km_id: int, km_hash: st
             elif 500 <= status < 600:
                 print(f"ESI Error {status} for GET /v1/killmails/{km_id}/{km_hash}/")
             raise
-    
+
     # Si on arrive ici, toutes les tentatives ont échoué
     raise Exception(f"Failed to fetch killmail {km_id} after {max_retries} attempts")

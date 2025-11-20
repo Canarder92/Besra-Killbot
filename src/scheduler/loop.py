@@ -110,7 +110,7 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                     # Les killmails sont déjà triés par ID décroissant (plus récent d'abord)
                     # Inverser pour traiter du plus ancien au plus récent
                     known = await idx.known_set()
-                    
+
                     # Traiter en flux inversé (du plus vieux au plus récent)
                     for ref in reversed(refs):
                         # Ne traiter que les killmails pas encore dans l'index
@@ -122,6 +122,7 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                                 await idx.add_if_absent(ref.killmail_id, ref.killmail_hash)
                             except Exception as e:
                                 import traceback
+
                                 print(f"[process] error for killmail {ref.killmail_id}: {e}")
                                 print(f"[process] traceback:\n{traceback.format_exc()}")
 
@@ -134,6 +135,7 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                     )
             except Exception as e:
                 import traceback
+
                 print(f"[poll] error: {e}")
                 print(f"[poll] traceback:\n{traceback.format_exc()}")
             await asyncio.sleep(settings.POLL_INTERVAL_SECONDS)
@@ -141,7 +143,7 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
     async def cleanup_task():
         # Attendre avant la première exécution pour ne pas concurrencer poll_task
         await asyncio.sleep(settings.CLEANUP_INTERVAL_MINUTES * 60)
-        
+
         while True:
             try:
                 # ESI: snapshot (force_body=True pour bypass 304 et resynchroniser l'index)

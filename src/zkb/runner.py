@@ -38,5 +38,6 @@ async def maybe_run_zkb_after_esi(
                 await process_ref(int(km_id), str(km_hash))
     except Exception as e:
         import traceback
+
         print(f"[zKill] error: {e}")
         print(f"[zKill] traceback:\n{traceback.format_exc()}")
