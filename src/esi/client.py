@@ -5,7 +5,7 @@ import time
 from typing import Any
 
 import httpx
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
 from src.config import settings
 
@@ -92,7 +92,13 @@ class AsyncESIClient:
     @retry(
         wait=wait_exponential_jitter(initial=1, max=10),
         stop=stop_after_attempt(5),
-        retry=retry_if_exception_type(httpx.RequestError),
+        retry=retry_if_exception(
+            lambda e: isinstance(e, httpx.RequestError)
+            or (
+                isinstance(e, httpx.HTTPStatusError)
+                and e.response.status_code in (429, 500, 502, 503, 504)
+            )
+        ),
         reraise=True,
     )
     async def _request(
