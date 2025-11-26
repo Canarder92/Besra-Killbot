@@ -46,6 +46,14 @@ def dotlan_map(region_name: str, system_name: str) -> str:
     return f"http://evemaps.dotlan.net/map/{region}/{system}"
 
 
+def zkill_related(system_id: int, killmail_time) -> str:
+    """Generate zkillboard related kills link for system and time."""
+    dt = killmail_time.astimezone(ZoneInfo("UTC"))
+    # Format: YYYYMMDDHH00
+    time_str = dt.strftime("%Y%m%d%H00")
+    return f"https://zkillboard.com/related/{system_id}/{time_str}/"
+
+
 def ship_render_url(type_id: int) -> str:
     # CCP images
     return f"https://images.evetech.net/types/{type_id}/render?size=128"
@@ -88,7 +96,7 @@ def build_embed_insight5(
     # Pas de title pour éviter la grande police
     embed = discord.Embed(colour=color, url=url)
 
-    # Affiche la ligne en "author" avec l’icône de la corporation victime
+    # Affiche la ligne en "author" avec l'icône de la corporation victime
     embed.set_author(name=header, url=url, icon_url=corp_logo_url(km.victim.corporation_id))
 
     # Thumbnail: ship
@@ -116,7 +124,10 @@ def build_embed_insight5(
     )
     v_lines.append(f"System: [{system_name}]({dotlan_map(region_name, system_name)}) {region_part}")
     date_tz = km.killmail_time.astimezone(ZoneInfo(settings.TIMEZONE))
-    v_lines.append(f"Date:  {date_tz.strftime('%d/%m/%Y - %Hh%M')}")
+
+    # Generate related kills link
+    related_link = zkill_related(km.solar_system_id, km.killmail_time)
+    v_lines.append(f"Date:  {date_tz.strftime('%d/%m/%Y - %Hh%M')} - [R]({related_link})")
 
     embed.add_field(
         name="Victime ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ",
@@ -162,6 +173,7 @@ def build_embed_insight5(
         f_lines.append("Alliance: —")
     f_lines.append(f"Drop:  {format_isk(dropped_value)}")
     f_lines.append(f"Value: {format_isk(total_value)}")
+
     embed.add_field(
         name="Final Blow  ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎",
         value="\n".join(f_lines),

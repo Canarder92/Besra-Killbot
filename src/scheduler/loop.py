@@ -4,6 +4,7 @@ import asyncio
 import os
 
 import discord
+import httpx
 
 from src.botui.embeds import build_embed_insight5
 from src.config import settings
@@ -121,10 +122,7 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                                 # Marquer comme traité APRÈS le post Discord
                                 await idx.add_if_absent(ref.killmail_id, ref.killmail_hash)
                             except Exception as e:
-                                import traceback
-
                                 print(f"[process] error for killmail {ref.killmail_id}: {e}")
-                                print(f"[process] traceback:\n{traceback.format_exc()}")
 
                     # Puis zKill selon la cadence
                     await maybe_run_zkb_after_esi(
@@ -133,10 +131,14 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                         idx=idx,
                         process_ref=lambda km_id, km_hash: process_ref(ctx, km_id, km_hash),
                     )
+            except httpx.HTTPStatusError:
+                # Erreurs HTTP déjà loggées dans killmails.py
+                pass
             except Exception as e:
+                # Erreurs inattendues non-HTTP
                 import traceback
 
-                print(f"[poll] error: {e}")
+                print(f"[poll] unexpected error: {e}")
                 print(f"[poll] traceback:\n{traceback.format_exc()}")
             await asyncio.sleep(settings.POLL_INTERVAL_SECONDS)
 

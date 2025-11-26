@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "killmailbot"
-version = "1.0.6-2311"
+version = "1.0.7-2611"
 description = "Discord bot for EVE killmails"
 requires-python = ">=3.11"
 dependencies = [

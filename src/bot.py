@@ -25,7 +25,7 @@ client = discord.Client(intents=intents)
 async def on_ready():
     user = client.user
     assert user is not None
-    print(f"KillMailBot v{__version__} - Release: 23/11/2025")
+    print(f"KillMailBot v{__version__} - Release: 26/11/2025")
     print(f"Logged in as {user} (ID: {user.id})")
 
     try:
