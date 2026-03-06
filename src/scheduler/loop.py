@@ -22,6 +22,11 @@ from src.zkb.zkill import fetch_corporation_killrefs
 KILLS_INDEX_PATH = os.path.join("data", "kills_index.json")
 PRICES_PATH = os.path.join("data", "prices.json")
 
+# on_ready() est rappelé à chaque reconnexion Discord gateway.
+# Sans ce guard, chaque reconnexion crée des poll_task/cleanup_task en double
+# → les mêmes kills sont postés N fois en parallèle.
+_scheduler_started = False
+
 
 class KillIndex:
     def __init__(self, path: str):
@@ -55,6 +60,12 @@ class KillIndex:
 
 
 async def start_scheduler(discord_client: discord.Client, channel_id: int):
+    global _scheduler_started
+    if _scheduler_started:
+        print("[scheduler] already running — skipping duplicate start (Discord reconnect)")
+        return
+    _scheduler_started = True
+
     # Channel
     channel = discord_client.get_channel(channel_id)
     if not isinstance(
