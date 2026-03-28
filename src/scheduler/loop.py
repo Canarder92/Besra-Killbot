@@ -15,6 +15,7 @@ from src.core.store import JSONStore
 from src.esi.client import AsyncESIClient
 from src.esi.killmails import fetch_recent_killmails
 from src.esi.universe import get_region_id_for_system, resolve_names
+from src.scheduler.cleanup_policy import should_rewrite_cleanup_index
 from src.zkb.poster import post_main
 from src.zkb.runner import maybe_run_zkb_after_esi
 from src.zkb.zkill import fetch_corporation_killrefs
@@ -159,6 +160,10 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
 
         while True:
             try:
+                zkb_enabled = bool(getattr(settings, "ZKB_ENABLE", False))
+                esi_snapshot_ok = False
+                zkb_snapshot_ok = not zkb_enabled
+
                 # ESI: snapshot (force_body=True pour bypass 304 et resynchroniser l'index)
                 status, _etag, refs = await fetch_recent_killmails(
                     esi, int(settings.CORPORATION_ID), etag=None, force_body=True
@@ -166,9 +171,10 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                 current: set[tuple[int, str]] = set()
                 if status == "ok":
                     current |= {(r.killmail_id, r.killmail_hash) for r in refs}
+                    esi_snapshot_ok = True
 
                 # zKill: union pour garder les kills zKill-only
-                if getattr(settings, "ZKB_ENABLE", False):
+                if zkb_enabled:
                     try:
                         zkb_refs = await fetch_corporation_killrefs(
                             int(settings.CORPORATION_ID),
@@ -178,11 +184,26 @@ async def start_scheduler(discord_client: discord.Client, channel_id: int):
                             km_id = r["killmail_id"] if isinstance(r, dict) else r.killmail_id
                             km_hash = r["killmail_hash"] if isinstance(r, dict) else r.killmail_hash
                             current.add((int(km_id), str(km_hash)))
+                        zkb_snapshot_ok = True
                     except Exception as e:
                         print(f"[cleanup][zkb] error: {e}")
 
-                if current:
+                if should_rewrite_cleanup_index(
+                    esi_snapshot_ok=esi_snapshot_ok,
+                    zkb_enabled=zkb_enabled,
+                    zkb_snapshot_ok=zkb_snapshot_ok,
+                ):
                     await idx.rewrite_with(current)
+                else:
+                    missing = []
+                    if not esi_snapshot_ok:
+                        missing.append("esi")
+                    if zkb_enabled and not zkb_snapshot_ok:
+                        missing.append("zkb")
+                    print(
+                        "[cleanup] skipped index rewrite: incomplete snapshot "
+                        f"({'+'.join(missing)})"
+                    )
             except Exception as e:
                 print(f"[cleanup] error: {e}")
             await asyncio.sleep(settings.CLEANUP_INTERVAL_MINUTES * 60)
